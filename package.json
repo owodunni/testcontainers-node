@@ -22,7 +22,7 @@
     "url": "https://github.com/testcontainers/testcontainers-node/issues"
   },
   "scripts": {
-    "prepare": "npm run build && husky install",
+    "prepare": "npm run build",
     "pre-commit": "lint-staged",
     "build": "npm run clean && tsc -p tsconfig.prod.json",
     "clean": "rimraf dist",
