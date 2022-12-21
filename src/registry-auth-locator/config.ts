@@ -8,24 +8,9 @@ const dockerConfigLocation = process.env.DOCKER_CONFIG || `${os.homedir()}/.dock
 const dockerConfigFile = path.resolve(dockerConfigLocation, "config.json");
 
 /**
- * Reads the docker config file from environment variable and returns the {@link DockerConfig}.
- *
- * Some CI environments (e.g. GitLab) encourages configuring docker using the environment variable
- * DOCKER_AUTH_CONFIG. If it exists, it will be used when there is no default config file.
+ * Read the docker config file from the default location and returns the {@link DockerConfig}.
  */
-const readDockerConfigFromEnv = (): DockerConfig => {
-  const dockerAuthConfig = process.env.DOCKER_AUTH_CONFIG;
-  if (!dockerAuthConfig) {
-    return {};
-  }
-  return JSON.parse(dockerAuthConfig);
-};
-
-export const readDockerConfig = async (): Promise<DockerConfig> => {
-  if (!existsSync(dockerConfigFile)) {
-    return readDockerConfigFromEnv();
-  }
-
+const readDockerConfigFromFile = async (): Promise<DockerConfig> => {
   const buffer = await fs.readFile(dockerConfigFile);
   const object = JSON.parse(buffer.toString());
 
@@ -34,4 +19,28 @@ export const readDockerConfig = async (): Promise<DockerConfig> => {
     credHelpers: object.credHelpers,
     auths: object.auths,
   };
+};
+
+/**
+ * Reads the docker config file from environment variable and returns the {@link DockerConfig}.
+ *
+ * Some CI environments (e.g. GitLab) encourages configuring docker using the environment variable
+ * DOCKER_AUTH_CONFIG. If it exists, it will be used when there is no default config file.
+ */
+const readDockerConfigFromEnv = (): DockerConfig => {
+  return JSON.parse(process.env.DOCKER_AUTH_CONFIG!);
+};
+
+/**
+ * Reads the docker config file or environment variable and returns the {@link DockerConfig}.
+ * If both exist, the config file will be used.
+ */
+export const readDockerConfig = async (): Promise<DockerConfig> => {
+  if (existsSync(dockerConfigFile)) {
+    return readDockerConfigFromFile();
+  } else if (process.env.DOCKER_AUTH_CONFIG) {
+    return readDockerConfigFromEnv();
+  } else {
+    return {};
+  }
 };
